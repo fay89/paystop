@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserRound, Camera, LogOut } from 'lucide-react';
-import { onAuthChange, logoutFirebase, finishMagicLinkLogin } from './lib/firebase';
+import { onAuthChange, logoutFirebase } from './lib/firebase';
 import type { User } from 'firebase/auth';
 import { useSubscriptions } from './hooks/useSubscriptions';
 import { Dashboard } from './components/Dashboard';
@@ -20,16 +20,10 @@ function App() {
 
     async function initAuth() {
       try {
-        // 1. Check if the user is clicking a Magic Link from their email
-        const redirectUser = await finishMagicLinkLogin();
-        if (redirectUser && mounted) {
-          setUser(redirectUser);
-          if (redirectUser.photoURL) setAvatar(redirectUser.photoURL);
-          setAuthChecked(true);
-          // If we found a user via magic link, we can stop here as onAuthChange will also fire
-        }
+        // Since we are using standard Email/Auth, we don't need a redirect result check.
+        // It will just initialize instantly via onAuthStateChanged below.
       } catch (error) {
-        console.error("Magic link check error:", error);
+        console.error("Auth init error:", error);
       }
 
       // 2. Set up the long-running auth listener

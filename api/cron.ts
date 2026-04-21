@@ -1,11 +1,13 @@
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 
 // Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
+if (getApps().length === 0) {
   try {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+    initializeApp({
+      credential: cert(serviceAccount)
     });
   } catch (err) {
     console.error("Firebase Admin config error. Ensure FIREBASE_SERVICE_ACCOUNT env var is set.", err);
@@ -19,8 +21,8 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const db = admin.firestore();
-    const messaging = admin.messaging();
+    const db = getFirestore();
+    const messaging = getMessaging();
 
     // 1. Get all users
     const usersSnapshot = await db.collection('users').get();

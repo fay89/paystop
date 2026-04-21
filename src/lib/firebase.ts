@@ -3,6 +3,7 @@ import {
   getAuth,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -29,6 +30,10 @@ console.log("Firebase: Services ready");
 
 export async function logoutFirebase(): Promise<void> {
   return signOut(auth);
+}
+
+export async function resetPassword(email: string): Promise<void> {
+  return sendPasswordResetEmail(auth, email);
 }
 
 export function onAuthChange(callback: (user: User | null) => void) {

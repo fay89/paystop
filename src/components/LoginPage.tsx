@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
-import { auth } from '../lib/firebase';
+import { auth, resetPassword } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 export const LoginPage: React.FC = () => {
@@ -10,11 +10,13 @@ export const LoginPage: React.FC = () => {
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setResetMessage('');
     if (!email.includes('@')) { setError('Introduce un email válido.'); return; }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return; }
 
@@ -40,6 +42,25 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    setError('');
+    setResetMessage('');
+    if (!email.includes('@')) {
+      setError('Escribe tu correo arriba y presiona "¿Olvidaste tu contraseña?" para poder enviarte el enlace.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      setResetMessage('Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.');
+    } catch (err: unknown) {
+      console.error(err);
+      setError('No pudimos enviar el correo de recuperación. Revisa que el email sea correcto.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="login-page">
       <div className="login-glow login-glow-1" />
@@ -60,14 +81,14 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             className={`login-tab ${mode === 'login' ? 'active' : ''}`}
-            onClick={() => { setMode('login'); setError(''); }}
+            onClick={() => { setMode('login'); setError(''); setResetMessage(''); }}
           >
             Iniciar sesión
           </button>
           <button
             type="button"
             className={`login-tab ${mode === 'register' ? 'active' : ''}`}
-            onClick={() => { setMode('register'); setError(''); }}
+            onClick={() => { setMode('register'); setError(''); setResetMessage(''); }}
           >
             Crear cuenta
           </button>
@@ -127,7 +148,21 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
+          {mode === 'login' && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.3rem', marginBottom: '1rem' }}>
+              <button 
+                type="button" 
+                onClick={handleResetPassword} 
+                style={{ fontSize: '0.8rem', color: '#9ca3af', cursor: 'pointer', background: 'none', border: 'none', transition: 'color 0.2s' }}
+                disabled={loading}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+          )}
+
           {error && <p className="login-error">{error}</p>}
+          {resetMessage && <p style={{ color: 'var(--brand-green)', fontSize: '0.85rem', textAlign: 'center', marginBottom: '1rem' }}>{resetMessage}</p>}
 
           <button type="submit" disabled={loading} className="btn-login-submit">
             {loading ? (

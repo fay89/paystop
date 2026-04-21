@@ -5,9 +5,13 @@ import { getMessaging } from 'firebase-admin/messaging';
 // Initialize Firebase Admin if not already initialized
 if (getApps().length === 0) {
   try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+    const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (!serviceAccountStr) throw new Error("Missing FIREBASE_SERVICE_ACCOUNT");
+    const serviceAccount = JSON.parse(serviceAccountStr);
+    
     initializeApp({
-      credential: cert(serviceAccount)
+      credential: cert(serviceAccount),
+      projectId: serviceAccount.project_id
     });
   } catch (err) {
     console.error("Firebase Admin config error. Ensure FIREBASE_SERVICE_ACCOUNT env var is set.", err);

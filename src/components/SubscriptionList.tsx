@@ -8,18 +8,26 @@ import { ServiceLogo } from './ServiceLogo';
 interface Props {
   subscriptions: Subscription[];
   onRemove: (id: string) => void;
+  initialAlertSubId?: string | null;
 }
 
-export const SubscriptionList: React.FC<Props> = ({ subscriptions, onRemove }) => {
+export const SubscriptionList: React.FC<Props> = ({ subscriptions, onRemove, initialAlertSubId }) => {
   const [alertSub, setAlertSub] = useState<Subscription | null>(null);
 
+  // Deep linking logic 
+  React.useEffect(() => {
+    if (initialAlertSubId && subscriptions.length > 0) {
+      const sub = subscriptions.find(s => s.id === initialAlertSubId);
+      if (sub) setAlertSub(sub);
+      
+      // Clean up URL so it doesn't re-trigger on reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [initialAlertSubId, subscriptions]);
+
   if (subscriptions.length === 0) {
-    return <div className="text-center text-muted py-8">Aún no hay suscripciones actívas.</div>;
-  }
-
-
-
-  return (
+    return <div className="text-center text-muted py-8">Aún no hay suscripciones activas.</div>;
+  }  return (
     <div>
       <div className="list-header">SUSCRIPCIONES ACTIVAS</div>
       <div className="card">

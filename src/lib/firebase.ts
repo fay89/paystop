@@ -7,6 +7,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getMessaging, getToken, type Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -25,6 +26,38 @@ console.log("Firebase: Initializing with config:", {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Initialize Messaging conditionally (not all browsers support it, especially old iOS)
+export let messaging: Messaging | null = null;
+try {
+  messaging = getMessaging(app);
+} catch (err) {
+  console.warn("Firebase Messaging not supported on this device/browser", err);
+}
+
+export async function requestNotificationPermission(): Promise<string | null> {
+  if (!messaging) return null;
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      // Register service worker with config
+      const configStr = encodeURIComponent(JSON.stringify(firebaseConfig));
+      const registration = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?config=${configStr}`);
+      
+      const token = await getToken(messaging, {
+        serviceWorkerRegistration: registration,
+        // VAPID key is necessary for Web Push. Set to a dummy fallback if missing so it doesn't crash,
+        // but user will need to add VITE_FIREBASE_VAPID_KEY for real notifications to work.
+        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+      });
+      return token;
+    }
+  } catch (err) {
+    console.error("Error requesting notification permission:", err);
+  }
+  return null;
+}
+
 console.log("Firebase: Services ready");
 
 

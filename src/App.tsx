@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { UserRound, Camera, LogOut } from 'lucide-react';
-import { onAuthChange, logoutFirebase } from './lib/firebase';
+import { UserRound, Camera, LogOut, Bell } from 'lucide-react';
+import { onAuthChange, logoutFirebase, requestNotificationPermission, db } from './lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { useSubscriptions } from './hooks/useSubscriptions';
 import { Dashboard } from './components/Dashboard';
@@ -13,6 +14,13 @@ function App() {
   const { subscriptions, loading: subsLoading, addSubscription, removeSubscription } = useSubscriptions(user?.uid);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [subIdParam, setSubIdParam] = useState<string | null>(null);
+
+  // Check URL inside effect exactly once
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setSubIdParam(params.get('subId'));
+  }, []);
 
   // Subscribe to Firebase auth state and handle redirects
   useEffect(() => {
@@ -48,6 +56,18 @@ function App() {
   const handleLogout = async () => {
     await logoutFirebase();
     setAvatar(null);
+  };
+
+  const handleEnablePush = async () => {
+    if (!user) return;
+    const token = await requestNotificationPermission();
+    if (token) {
+      console.log("Token obtained", token);
+      await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
+      alert("¡Genial! Te avisaremos 24 horas antes de cada cobro.");
+    } else {
+      alert("Debes permitir las notificaciones en tu navegador/móvil para usar esta función.");
+    }
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,15 +152,20 @@ function App() {
           <p className="app-subtitle">Hola, {displayName.split(' ')[0]} 👋</p>
         </div>
 
-        {/* Logout – right */}
-        <button onClick={handleLogout} className="btn-logout" title="Cerrar sesión">
-          <LogOut size={18} />
-        </button>
+        {/* Actions – right */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleEnablePush} className="btn-logout" title="Activar Alertas" style={{ background: 'rgba(60,229,126,0.1)', color: '#3ce57e' }}>
+            <Bell size={18} />
+          </button>
+          <button onClick={handleLogout} className="btn-logout" title="Cerrar sesión">
+            <LogOut size={18} />
+          </button>
+        </div>
       </header>
 
       <main className="flex flex-col gap-6 flex-1">
         <Dashboard subscriptions={subscriptions} />
-        <SubscriptionList subscriptions={subscriptions} onRemove={removeSubscription} />
+        <SubscriptionList subscriptions={subscriptions} onRemove={removeSubscription} initialAlertSubId={subIdParam} />
       </main>
 
       <AddSubscriptionForm onAdd={addSubscription} />

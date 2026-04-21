@@ -60,13 +60,17 @@ function App() {
 
   const handleEnablePush = async () => {
     if (!user) return;
-    const token = await requestNotificationPermission();
-    if (token) {
-      console.log("Token obtained", token);
-      await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
-      alert("¡Genial! Te avisaremos 24 horas antes de cada cobro.");
-    } else {
-      alert("Debes permitir las notificaciones en tu navegador/móvil para usar esta función.");
+    try {
+      const token = await requestNotificationPermission();
+      if (token) {
+        console.log("Token obtained", token);
+        await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
+        alert("¡Genial! Te avisaremos 24 horas antes de cada cobro.");
+      } else {
+        alert("Debes permitir las notificaciones en tu navegador/móvil para usar esta función.");
+      }
+    } catch (e: any) {
+      alert(`Error técnico al activar notificaciones: ${e.message || e}`);
     }
   };
 

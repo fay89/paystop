@@ -46,14 +46,13 @@ export async function requestNotificationPermission(): Promise<string | null> {
       
       const token = await getToken(messaging, {
         serviceWorkerRegistration: registration,
-        // VAPID key is necessary for Web Push. Set to a dummy fallback if missing so it doesn't crash,
-        // but user will need to add VITE_FIREBASE_VAPID_KEY for real notifications to work.
         vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
       });
       return token;
     }
   } catch (err) {
     console.error("Error requesting notification permission:", err);
+    throw err;
   }
   return null;
 }

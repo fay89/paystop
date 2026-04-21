@@ -42,7 +42,10 @@ export async function requestNotificationPermission(): Promise<string | null> {
     if (permission === 'granted') {
       // Register service worker with config
       const configStr = encodeURIComponent(JSON.stringify(firebaseConfig));
-      const registration = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?config=${configStr}`);
+      await navigator.serviceWorker.register(`/firebase-messaging-sw.js?config=${configStr}`);
+      
+      // CRUCIAL: Wait for the service worker to be fully installed and active!
+      const registration = await navigator.serviceWorker.ready;
       
       const token = await getToken(messaging, {
         serviceWorkerRegistration: registration,

@@ -28,7 +28,13 @@ export default async function handler(req: any, res: any) {
     const messaging = getMessaging();
 
     // 1. Get all users
-    const usersSnapshot = await db.collection('users').get();
+    let usersSnapshot;
+    try {
+      usersSnapshot = await db.collection('users').get();
+    } catch (e: any) {
+      return res.status(500).json({ error: "Firestore Error: " + (e.message || e) });
+    }
+    
     let sentCount = 0;
 
     // Tomorrow date bounds
@@ -43,7 +49,12 @@ export default async function handler(req: any, res: any) {
       if (!fcmToken) continue; // Skip users without push tokens
 
       // 2. Fetch their subscriptions
-      const subsSnapshot = await userDoc.ref.collection('subscriptions').get();
+      let subsSnapshot;
+      try {
+        subsSnapshot = await userDoc.ref.collection('subscriptions').get();
+      } catch (e: any) {
+        return res.status(500).json({ error: "Firestore Subscriptions fetch error: " + (e.message || e) });
+      }
       
       for (const subDoc of subsSnapshot.docs) {
         const sub = subDoc.data();
@@ -65,8 +76,13 @@ export default async function handler(req: any, res: any) {
               }
             });
             sentCount++;
-          } catch (e) {
+          } catch (e: any) {
             console.error(`Failed to send to user ${userDoc.id}`, e);
+            // Don't stop the loop just because ONE push failed (e.g. invalid token)
+            // But if we want to debug the immediate error for the user, we can return it:
+            if (e.message?.includes('NOT_FOUND') || e.code?.includes('NOT_FOUND')) {
+              return res.status(500).json({ error: "Messaging Error: " + (e.message || e) });
+            }
           }
         }
       }
@@ -74,7 +90,7 @@ export default async function handler(req: any, res: any) {
 
     res.status(200).json({ success: true, sentNotifications: sentCount });
   } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    console.error("Global Error", error);
+    res.status(500).json({ error: "Global Error: " + error.message });
   }
 }

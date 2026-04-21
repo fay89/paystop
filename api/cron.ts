@@ -15,8 +15,11 @@ if (getApps().length === 0) {
 }
 
 export default async function handler(req: any, res: any) {
-  // Optional: Security check to ensure it's called by Vercel Cron
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Allow Vercel Cron or manual testing via URL param
+  const isVercelCron = req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
+  const isManualTest = req.query.test === 'paystop'; // Secret testing parameter
+
+  if (!isVercelCron && !isManualTest) {
     return res.status(401).end('Unauthorized');
   }
 
